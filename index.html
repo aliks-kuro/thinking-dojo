@@ -166,23 +166,63 @@ input, textarea, select { font-family: inherit; color: var(--text); }
 .vocab-chip {
   background: var(--surface); border: 1px solid var(--green);
   border-radius: 20px; padding: 4px 11px; font-size: 0.78rem;
-  cursor: pointer; color: var(--green); transition: background 0.15s;
+  cursor: default; color: var(--green); transition: background 0.15s;
+  position: relative;
 }
 .vocab-chip:hover { background: var(--surface2); }
+.vocab-chip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--gold);
+  border-radius: 8px; padding: 5px 10px;
+  font-size: 0.75rem; color: var(--text); white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  z-index: 50;
+}
+.vocab-chip:hover::after { opacity: 1; }
 .vocab-empty { color: var(--muted); font-size: 0.82rem; }
 
 /* CALENDAR */
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
-.cal-label { text-align: center; font-size: 0.68rem; color: var(--muted); padding: 4px 0; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 14px; }
+.cal-label { text-align: center; font-size: 0.62rem; color: var(--muted); padding: 2px 0; }
 .cal-day {
-  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center;
-  justify-content: center; font-size: 0.72rem; color: var(--muted);
-  background: var(--surface); transition: all 0.2s;
+  height: 28px; border-radius: 6px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.68rem; color: var(--muted);
+  background: var(--surface); transition: all 0.2s; cursor: pointer;
 }
-.cal-day.done { background: var(--gold); color: #111; font-weight: 700; font-size: 0.8rem; }
+.cal-day:hover { border-color: var(--gold); opacity: 0.85; }
+.cal-day.done { background: var(--gold); color: #111; font-weight: 700; }
 .cal-day.today { border: 2px solid var(--gold); color: var(--text); }
 .cal-day.done.today { border: 2px solid #fff; }
-.cal-empty { background: transparent !important; }
+.cal-empty { background: transparent !important; cursor: default; }
+
+/* 日別モーダル */
+.day-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 300; display: flex; align-items: flex-end; justify-content: center;
+}
+.day-modal-sheet {
+  background: var(--surface); border-radius: 16px 16px 0 0;
+  padding: 20px; width: 100%; max-width: 480px; max-height: 70vh;
+  overflow-y: auto; border-top: 1px solid var(--border);
+}
+.day-modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.day-modal-title { font-size: 1rem; font-weight: 700; color: var(--gold); }
+.day-modal-close {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: 8px; padding: 4px 12px; font-size: 0.82rem;
+}
+.day-session-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px;
+}
+.day-session-card h4 { font-size: 0.88rem; margin-bottom: 4px; }
+.day-session-meta { font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+.day-no-session { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 20px 0; }
 
 /* CHAT SCREEN */
 #screen-chat { height: 100vh; }
@@ -520,6 +560,17 @@ input, textarea, select { font-family: inherit; color: var(--text); }
 </nav>
 
 <div class="toast" id="toast"></div>
+
+<!-- 日別セッションモーダル -->
+<div class="day-modal-overlay" id="day-modal" style="display:none" onclick="closeDayModal(event)">
+  <div class="day-modal-sheet">
+    <div class="day-modal-header">
+      <div class="day-modal-title" id="day-modal-title"></div>
+      <button class="day-modal-close" onclick="closeDayModal()">閉じる</button>
+    </div>
+    <div id="day-modal-body"></div>
+  </div>
+</div>
 </div>
 
 <script>
@@ -1383,7 +1434,7 @@ function renderVocabChips() {
     return;
   }
   el.innerHTML = v.slice(-12).reverse()
-    .map(x => `<div class="vocab-chip" title="${x.m}">📚 ${x.w}</div>`)
+    .map(x => `<div class="vocab-chip" data-tip="${x.m}">📚 ${x.w}</div>`)
     .join('');
 }
 
@@ -1430,6 +1481,7 @@ function renderCalendar(id) {
     if (doneDates.has(ds)) el.classList.add('done');
     if (d === todayN) el.classList.add('today');
     el.textContent = doneDates.has(ds) ? '✓' : d;
+    el.onclick = () => showDaySessions(ds, year, month, d);
     grid.appendChild(el);
   }
 }
@@ -1601,6 +1653,42 @@ function gotoScreen(name) {
     renderStats();
   } else if (name === 'profile') {
     loadProfileForm();
+  }
+}
+
+// ===== DAY SESSIONS MODAL =====
+function showDaySessions(dateStr, year, month, day) {
+  const sessions = getSessions().filter(s => s.date === dateStr);
+  const daily = getDailyData();
+  const isDailyDone = daily.date === dateStr && daily.done;
+
+  const modeLabel = { socratic:'🧘 対話', counter:'⚔️ 反論', decision:'🧭 意思決定', output:'📰 アウトプット', news:'🌍 国際情勢' };
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  document.getElementById('day-modal-title').textContent = `${year}年${monthNames[month]}${day}日`;
+
+  const body = document.getElementById('day-modal-body');
+  if (sessions.length === 0 && !isDailyDone) {
+    body.innerHTML = '<div class="day-no-session">この日のセッション記録はありません</div>';
+  } else {
+    const badge = isDailyDone ? '<span style="color:var(--green);font-size:0.82rem">✅ デイリータスク達成</span>' : '';
+    body.innerHTML = badge + sessions.map(s => `
+      <div class="day-session-card">
+        <h4>${modeLabel[s.mode] || s.mode}</h4>
+        <div class="day-session-meta">
+          ${s.topic ? `話題：「${s.topic}...」<br>` : ''}
+          往復数：${s.exchanges}回　／　獲得ポイント：${Math.round(s.pts || 0)}pt
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('day-modal').style.display = 'flex';
+}
+
+function closeDayModal(e) {
+  if (!e || e.target === document.getElementById('day-modal')) {
+    document.getElementById('day-modal').style.display = 'none';
   }
 }
 
