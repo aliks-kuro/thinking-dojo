@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思考道場</title>
+<style>
+:root {
+  --bg: #111014;
+  --surface: #1c1b20;
+  --surface2: #28272e;
+  --border: #3a3840;
+  --text: #e8e6f0;
+  --muted: #8a8898;
+  --gold: #d4a853;
+  --gold-light: #f0c878;
+  --green: #56c78a;
+  --red: #e07070;
+  --blue: #6baed6;
+  --r: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', 'Yu Gothic', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+button { cursor: pointer; border: none; font-family: inherit; }
+input, textarea, select { font-family: inherit; color: var(--text); }
+.screen { display: none; flex-direction: column; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* HEADER */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 10;
+}
+.header-title { font-size: 1.05rem; font-weight: 700; color: var(--gold); }
+.streak-badge {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px; font-size: 0.82rem; color: var(--gold);
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+  display: flex; background: var(--surface); border-top: 1px solid var(--border);
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 10px 0; font-size: 0.68rem; color: var(--muted);
+  background: transparent; gap: 2px; transition: color 0.2s;
+}
+.nav-btn .nav-icon { font-size: 1.3rem; }
+.nav-btn.active, .nav-btn:hover { color: var(--gold); }
+.pb-nav { padding-bottom: 72px; }
+
+/* DASHBOARD */
+.dashboard-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+.daily-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px; margin-bottom: 16px;
+}
+.daily-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.daily-card h2 { font-size: 0.85rem; color: var(--muted); }
+.daily-status { font-size: 0.85rem; font-weight: 700; color: var(--green); }
+.progress-bar { background: var(--surface2); border-radius: 100px; height: 8px; margin: 8px 0; }
+.progress-fill {
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 100px; height: 100%; transition: width 0.6s cubic-bezier(.4,0,.2,1);
+}
+.progress-label { font-size: 0.8rem; color: var(--muted); }
+
+.section-title {
+  font-size: 0.75rem; color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.1em; margin-bottom: 10px; margin-top: 4px;
+}
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.mode-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; cursor: pointer;
+  transition: all 0.2s; text-align: left;
+}
+.mode-card:hover { border-color: var(--gold); background: var(--surface2); transform: translateY(-1px); }
+.mode-card-wide {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 14px;
+}
+.mode-card-wide .mode-icon { font-size: 1.8rem; margin-bottom: 0; flex-shrink: 0; }
+.mode-card-wide .mode-info { flex: 1; }
+.mode-card-wide .mode-title { font-size: 0.95rem; }
+.mode-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.mode-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 3px; }
+.mode-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+/* News analysis card */
+.news-analysis {
+  align-self: stretch; max-width: 100%;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; font-size: 0.85rem; line-height: 1.8;
+  white-space: pre-wrap;
+}
+.news-analysis h2 { font-size: 0.95rem; color: var(--gold); margin-bottom: 6px; }
+.chain-arrow { color: var(--gold); font-weight: 700; }
+.quiz-badge {
+  align-self: center; background: rgba(107,174,214,0.12);
+  border: 1px solid var(--blue); border-radius: 20px;
+  padding: 5px 16px; font-size: 0.8rem; color: var(--blue);
+}
+/* バトルスコアバー */
+#battle-bar {
+  flex-shrink: 0; padding: 8px 14px 10px;
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+  display: none;
+}
+.battle-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.72rem; margin-bottom: 6px;
+}
+.battle-lbl-ai   { color: var(--red);  font-weight: 700; }
+.battle-lbl-user { color: var(--blue); font-weight: 700; }
+.battle-lbl-mid  { color: var(--muted); }
+.battle-wrap {
+  display: flex; height: 14px; border-radius: 7px;
+  overflow: hidden; border: 1px solid var(--border);
+  position: relative;
+}
+.battle-seg-ai {
+  background: linear-gradient(90deg, #c84b4b, var(--red));
+  transition: flex 0.7s cubic-bezier(.4,0,.2,1);
+  flex: 50;
+}
+.battle-divider {
+  width: 3px; background: #fff; flex-shrink: 0; opacity: 0.9;
+}
+.battle-seg-user {
+  background: linear-gradient(90deg, var(--blue), #4b8ec8);
+  transition: flex 0.7s cubic-bezier(.4,0,.2,1);
+  flex: 50;
+}
+.battle-nums {
+  display: flex; justify-content: space-between;
+  font-size: 0.82rem; font-weight: 700; margin-top: 5px;
+}
+#battle-num-ai   { color: var(--red); }
+#battle-num-user { color: var(--blue); }
+/* 攻守切替スイッチ */
+.role-switch {
+  display: flex; align-items: center; gap: 6px;
+}
+.role-switch-label { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.role-btn {
+  border-radius: 20px; padding: 4px 12px; font-size: 0.78rem;
+  font-weight: 700; transition: all 0.2s; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+}
+.role-btn.defense { border-color: var(--blue); color: var(--blue); background: rgba(107,174,214,0.12); }
+.role-btn.attack  { border-color: var(--red);  color: var(--red);  background: rgba(224,112,112,0.12); }
+
+.vocab-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
+.vocab-chip {
+  background: var(--surface); border: 1px solid var(--green);
+  border-radius: 20px; padding: 4px 11px; font-size: 0.78rem;
+  cursor: pointer; color: var(--green); transition: background 0.15s;
+}
+.vocab-chip:hover { background: var(--surface2); }
+.vocab-empty { color: var(--muted); font-size: 0.82rem; }
+
+/* CALENDAR */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
+.cal-label { text-align: center; font-size: 0.68rem; color: var(--muted); padding: 4px 0; }
+.cal-day {
+  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.72rem; color: var(--muted);
+  background: var(--surface); transition: all 0.2s;
+}
+.cal-day.done { background: var(--gold); color: #111; font-weight: 700; font-size: 0.8rem; }
+.cal-day.today { border: 2px solid var(--gold); color: var(--text); }
+.cal-day.done.today { border: 2px solid #fff; }
+.cal-empty { background: transparent !important; }
+
+/* CHAT SCREEN */
+#screen-chat { height: 100vh; }
+.chat-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
+}
+.back-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 6px 12px; font-size: 0.82rem;
+}
+.back-btn:hover { border-color: var(--gold); color: var(--gold); }
+.chat-header-info { flex: 1; }
+.chat-header-info h2 { font-size: 0.95rem; font-weight: 700; }
+.chat-header-info p { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+.exchange-pill {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px; font-size: 0.78rem; color: var(--muted);
+  white-space: nowrap;
+}
+
+.messages-area { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.msg {
+  max-width: 88%; padding: 11px 14px; border-radius: 16px;
+  line-height: 1.65; font-size: 0.88rem; word-break: break-word;
+}
+.msg.user {
+  align-self: flex-end; background: var(--gold); color: #111;
+  border-radius: 16px 16px 4px 16px; font-weight: 500;
+}
+.msg.ai {
+  align-self: flex-start; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 16px 16px 16px 4px;
+}
+.msg.system-note {
+  align-self: center; background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: 0.78rem; text-align: center; border-radius: 20px;
+  padding: 6px 14px; max-width: 90%;
+}
+.vocab-hint {
+  margin-top: 8px; padding: 7px 11px;
+  background: rgba(86,199,138,0.08); border: 1px solid rgba(86,199,138,0.4);
+  border-radius: 8px; font-size: 0.8rem; color: var(--green);
+}
+.score-card {
+  align-self: center; background: var(--surface2); border: 1px solid var(--gold);
+  border-radius: var(--r); padding: 16px; max-width: 90%; width: 90%;
+}
+.score-card-title { font-size: 0.88rem; color: var(--gold); font-weight: 700; margin-bottom: 10px; }
+.score-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.83rem; }
+.score-val { font-weight: 700; color: var(--gold); }
+.score-feedback { margin-top: 10px; font-size: 0.8rem; color: var(--muted); line-height: 1.55; border-top: 1px solid var(--border); padding-top: 8px; }
+.news-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; align-self: stretch;
+}
+.news-card h3 { font-size: 0.88rem; color: var(--gold); margin-bottom: 8px; }
+.news-card p { font-size: 0.83rem; line-height: 1.7; }
+
+.chat-footer { flex-shrink: 0; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface); }
+.chat-footer-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px; font-size: 0.76rem; color: var(--muted);
+}
+.end-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 8px; padding: 3px 10px; font-size: 0.76rem;
+  transition: all 0.2s;
+}
+.end-btn:hover { border-color: var(--red); color: var(--red); }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.chat-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 13px; color: var(--text); font-size: 0.88rem;
+  resize: none; max-height: 120px; line-height: 1.5; outline: none;
+}
+.chat-input:focus { border-color: var(--gold); }
+.send-btn {
+  background: var(--gold); color: #111; border-radius: 10px;
+  padding: 10px 16px; font-size: 0.88rem; font-weight: 700;
+  flex-shrink: 0; transition: opacity 0.2s;
+}
+.send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* TYPING */
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 3px 0; }
+.typing-dots span {
+  width: 6px; height: 6px; background: var(--muted); border-radius: 50%;
+  animation: tdot 0.8s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes tdot { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
+
+/* STATS SCREEN */
+.stats-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+.stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.stat-box {
+  flex: 1; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; text-align: center;
+}
+.stat-num { font-size: 1.8rem; font-weight: 700; color: var(--gold); line-height: 1.2; }
+.stat-lbl { font-size: 0.73rem; color: var(--muted); margin-top: 4px; }
+.history-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px;
+}
+.history-item h4 { font-size: 0.88rem; margin-bottom: 3px; }
+.history-meta { font-size: 0.76rem; color: var(--muted); }
+
+/* PROFILE SCREEN */
+.profile-scroll { flex: 1; overflow-y: auto; padding: 16px; }
+.profile-scroll .subtitle { font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px 12px; font-size: 0.88rem; outline: none;
+}
+.form-group input:focus, .form-group textarea:focus { border-color: var(--gold); }
+.form-group select option { background: var(--surface2); }
+.style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.style-opt {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 10px 8px; cursor: pointer;
+  text-align: center; font-size: 0.82rem; line-height: 1.5; transition: all 0.2s;
+}
+.style-opt small { color: var(--muted); font-size: 0.73rem; display: block; }
+.style-opt.selected { border-color: var(--gold); background: rgba(212,168,83,0.1); color: var(--gold); }
+.save-btn {
+  width: 100%; background: var(--gold); color: #111; border-radius: 10px;
+  padding: 13px; font-size: 0.95rem; font-weight: 700; margin-top: 8px;
+  transition: opacity 0.2s;
+}
+.save-btn:hover { opacity: 0.9; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2); border: 1px solid var(--gold);
+  border-radius: 20px; padding: 8px 18px; font-size: 0.82rem; color: var(--gold);
+  opacity: 0; transition: opacity 0.3s; z-index: 200; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* VOCAB TOOLTIP */
+[data-tip] { position: relative; cursor: help; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ===== HOME SCREEN ===== -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <div class="header-title">🏯 思考道場</div>
+    <div class="streak-badge" id="streak-display">🔥 0日</div>
+  </div>
+  <div class="dashboard-scroll pb-nav">
+    <div class="daily-card">
+      <div class="daily-card-top">
+        <h2>今日のタスク</h2>
+        <div class="daily-status" id="daily-status-label"></div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="daily-progress" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="daily-score-label">0 / 100 pt</div>
+    </div>
+
+    <div class="section-title">トレーニングモード</div>
+    <div class="mode-grid">
+      <div class="mode-card" onclick="startMode('socratic')">
+        <div class="mode-icon">🧘</div>
+        <div class="mode-title">対話</div>
+        <div class="mode-desc">問いで思考を深める。禅問答でもOK</div>
+      </div>
+      <div class="mode-card" onclick="startMode('counter')">
+        <div class="mode-icon">⚔️</div>
+        <div class="mode-title">反論トレーニング</div>
+        <div class="mode-desc">AIが批判的に問い詰める</div>
+      </div>
+      <div class="mode-card" onclick="startMode('decision')">
+        <div class="mode-icon">🧭</div>
+        <div class="mode-title">意思決定ログ</div>
+        <div class="mode-desc">日常の小さな決断をAIと構造化。「なぜその選択をしたか」を言語化する習慣が身につく</div>
+      </div>
+      <div class="mode-card" onclick="startMode('output')">
+        <div class="mode-icon">📰</div>
+        <div class="mode-title">アウトプット力</div>
+        <div class="mode-desc">要約・説明を採点</div>
+      </div>
+      <div class="mode-card mode-card-wide" onclick="startMode('news')">
+        <div class="mode-icon">🌍</div>
+        <div class="mode-info">
+          <div class="mode-title">国際情勢・政治・経済</div>
+          <div class="mode-desc">今日のニュースを因果連鎖で分析 → 確認クイズ</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">習得語彙</div>
+    <div class="vocab-row" id="vocab-chips"></div>
+
+    <div class="section-title" id="cal-month-label">今月のカレンダー</div>
+    <div class="calendar-grid" id="calendar-home"></div>
+  </div>
+</div>
+
+<!-- ===== CHAT SCREEN ===== -->
+<div class="screen" id="screen-chat" style="height:100vh">
+  <div class="chat-header">
+    <button class="back-btn" onclick="exitChat()">← 戻る</button>
+    <div class="chat-header-info">
+      <h2 id="chat-title">モード</h2>
+      <p id="chat-sub"></p>
+    </div>
+    <div class="exchange-pill" id="exchange-pill">0往復</div>
+    <div class="role-switch" id="counter-switch" style="display:none">
+      <span class="role-switch-label">攻守:</span>
+      <button class="role-btn defense" id="role-btn" onclick="switchCounterRole()">🛡️ 守</button>
+    </div>
+  </div>
+  <!-- バトルスコアバー（反論トレーニングのみ表示） -->
+  <div id="battle-bar">
+    <div class="battle-header">
+      <span class="battle-lbl-ai">🔴 AI</span>
+      <span class="battle-lbl-mid">議論スコア</span>
+      <span class="battle-lbl-user">あなた 🔵</span>
+    </div>
+    <div class="battle-wrap">
+      <div class="battle-seg-ai"  id="battle-seg-ai"></div>
+      <div class="battle-divider"></div>
+      <div class="battle-seg-user" id="battle-seg-user"></div>
+    </div>
+    <div class="battle-nums">
+      <span id="battle-num-ai">50</span>
+      <span id="battle-num-user">50</span>
+    </div>
+  </div>
+
+  <div class="messages-area" id="messages"></div>
+  <div class="chat-footer">
+    <div class="chat-footer-meta">
+      <span id="session-pt-label">+0pt</span>
+      <button class="end-btn" onclick="endSession()">セッション終了 →</button>
+    </div>
+    <div class="input-row">
+      <textarea
+        class="chat-input" id="chat-input" rows="1"
+        placeholder="入力してください..."
+        onkeydown="handleKey(event)" oninput="autoResize(this)"
+      ></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">送信</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STATS SCREEN ===== -->
+<div class="screen" id="screen-stats">
+  <div class="header"><div class="header-title">📊 成長記録</div></div>
+  <div class="stats-scroll pb-nav">
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" id="stat-days">0</div>
+        <div class="stat-lbl">達成日数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-streak">0</div>
+        <div class="stat-lbl">🔥 連続</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="stat-vocab">0</div>
+        <div class="stat-lbl">習得語彙</div>
+      </div>
+    </div>
+    <div class="section-title" id="stats-cal-label">今月のカレンダー</div>
+    <div class="calendar-grid" id="calendar-stats"></div>
+    <div class="section-title" style="margin-top:16px">セッション履歴</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ===== PROFILE SCREEN ===== -->
+<div class="screen" id="screen-profile">
+  <div class="header"><div class="header-title">⚙️ AIコーチ設定</div></div>
+  <div class="profile-scroll pb-nav">
+    <p class="subtitle">登録した情報はAIコーチの対話スタイルに反映されます。過去の語彙・セッション傾向も蓄積されていきます。</p>
+    <div class="form-group">
+      <label>名前（ニックネームでOK）</label>
+      <input type="text" id="p-name" placeholder="例：たろう">
+    </div>
+    <div class="form-group">
+      <label>職業・立場</label>
+      <input type="text" id="p-job" placeholder="例：エンジニア、学生、マーケター">
+    </div>
+    <div class="form-group">
+      <label>よく悩むテーマ（カンマ区切り）</label>
+      <textarea id="p-worries" rows="2" placeholder="例：キャリア, 人間関係, 自己成長"></textarea>
+    </div>
+    <div class="form-group">
+      <label>コーチのスタイル</label>
+      <div class="style-grid" id="style-grid">
+        <div class="style-opt selected" data-style="gentle" onclick="selectStyle(this)">
+          😊 やさしい<small>温かく寄り添う</small>
+        </div>
+        <div class="style-opt" data-style="sharp" onclick="selectStyle(this)">
+          🔥 鋭い<small>容赦なく問い詰める</small>
+        </div>
+        <div class="style-opt" data-style="socratic" onclick="selectStyle(this)">
+          🏛️ ソクラテス式<small>問いのみで導く</small>
+        </div>
+        <div class="style-opt" data-style="zen" onclick="selectStyle(this)">
+          🧘 禅的<small>余白と間を大切に</small>
+        </div>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveProfile()">保存する</button>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="gotoScreen('home')">
+    <span class="nav-icon">🏠</span><span>ホーム</span>
+  </button>
+  <button class="nav-btn" id="nav-stats" onclick="gotoScreen('stats')">
+    <span class="nav-icon">📊</span><span>記録</span>
+  </button>
+  <button class="nav-btn" id="nav-profile" onclick="gotoScreen('profile')">
+    <span class="nav-icon">⚙️</span><span>設定</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ===== CONSTANTS =====
+const OLLAMA = 'http://localhost:11434/api/chat';
+const MODEL  = 'qwen2.5:7b';
+const TARGET_PT = 100;
+const PT_PER_EXCHANGE = 12;
+
+const MODE_META = {
+  socratic: { title: '🧘 対話',                   sub: '問いで思考を深める' },
+  counter:  { title: '⚔️ 反論トレーニング',       sub: 'AIがあえて反論します' },
+  decision: { title: '🧭 意思決定ログ',           sub: '選択の構造化' },
+  output:   { title: '📰 アウトプット力',          sub: '要約・説明の採点' },
+  news:     { title: '🌍 国際情勢・政治・経済',   sub: '今日のニュース分析＋クイズ' },
+};
+
+const KOANS = [
+  '隻手の声——片手を鳴らせば、その音は何か？',
+  '父母未生以前の本来の面目——あなたが生まれる前、あなたの本当の顔は？',
+  '「今」とは何か？考えた瞬間にはもう過去になっている。',
+  '犬に仏性はあるか？',
+  'このコップを空にせずに、どうやって新しい水を注ぐか？',
+  '走っているのは足か、心か、それとも何か？',
+  '暗闇の中で鏡を見ると何が映るか？',
+];
+
+const VOCAB_LIST = [
+  // ビジネス横文字
+  { w:'エビデンス',        m:'証拠・根拠（Evidence）' },
+  { w:'アジェンダ',        m:'議題・会議の予定表' },
+  { w:'コンセンサス',      m:'全員の合意・総意' },
+  { w:'バッファ',          m:'余裕・余白・予備' },
+  { w:'リソース',          m:'人材・時間・予算などの資源' },
+  { w:'マイルストーン',    m:'プロジェクトの重要な節目' },
+  { w:'オーナーシップ',    m:'当事者意識・主体的責任感' },
+  { w:'ペンディング',      m:'保留・未決定' },
+  { w:'スケーラブル',      m:'拡張性がある・規模を広げられる' },
+  { w:'シナジー',          m:'相乗効果' },
+  { w:'アサーティブ',      m:'自分の意見を適切に主張できること' },
+  { w:'トレードオフ',      m:'一方を選ぶと他方を犠牲にする関係' },
+  { w:'ステークホルダー',  m:'利害関係者' },
+  { w:'イテレーション',    m:'繰り返し・試行錯誤のサイクル' },
+  { w:'ボトルネック',      m:'全体の流れを遅くしている箇所' },
+  { w:'ロジカルシンキング',m:'論理的思考・筋道を立てて考えること' },
+  { w:'グランドデザイン',  m:'全体構想・大局的な設計' },
+  { w:'フィジビリティ',    m:'実現可能性' },
+  { w:'バリューアップ',    m:'付加価値を高めること' },
+  { w:'ネクストアクション',m:'次の行動・次にやること' },
+  { w:'コンプライアンス',  m:'法令・規則の遵守' },
+  { w:'ガバナンス',        m:'組織の管理・統治体制' },
+  { w:'インセンティブ',    m:'行動を促す動機・報酬' },
+  { w:'アカウンタビリティ',m:'結果に対する説明責任' },
+  { w:'リテラシー',        m:'特定分野を正しく理解・活用する能力' },
+  // 新聞・白書・法律レベル
+  { w:'瑕疵',      m:'欠点・不備（法的な欠陥）' },
+  { w:'適否',      m:'適切かどうかという判断' },
+  { w:'裁量',      m:'状況に応じて自分で判断する権限' },
+  { w:'恣意的',    m:'客観的根拠なく自分勝手に判断すること' },
+  { w:'齟齬',      m:'食い違い・ずれ' },
+  { w:'乖離',      m:'かけ離れていること' },
+  { w:'遡及',      m:'過去にさかのぼって適用すること' },
+  { w:'抵触',      m:'法律やルールに反すること' },
+  { w:'準拠',      m:'ある基準・規則に従うこと' },
+  { w:'担保',      m:'保証すること・確保すること' },
+  { w:'履行',      m:'義務・約束を実際に行うこと' },
+  { w:'是認',      m:'正しいと認めること・承認' },
+  { w:'看過',      m:'問題を見て見ぬふりすること' },
+  { w:'付随',      m:'主なものに伴って生じること' },
+  { w:'網羅',      m:'必要なものをすべて含むこと' },
+  { w:'包括',      m:'広く全体をひとまとめにすること' },
+  { w:'顕在化',    m:'潜んでいた問題が表面に現れること' },
+  { w:'潜在的',    m:'表に出ていないが内部に存在すること' },
+  { w:'正当化',    m:'行為が正しいと理由づけること' },
+  { w:'是正',      m:'悪い状態を正しく改めること' },
+  { w:'忖度',      m:'相手の気持ちを推し量って行動すること' },
+  { w:'蓋然性',    m:'ある事柄が起こる可能性・確からしさ' },
+  { w:'不可逆',    m:'元に戻せないこと' },
+  { w:'相殺',      m:'互いの損得を差し引いてゼロにすること' },
+  { w:'帰結',      m:'物事の行き着く結果・結論' },
+  { w:'前提',      m:'議論や行動のベースとなる条件' },
+  { w:'論拠',      m:'主張を支える根拠・理由' },
+  { w:'命題',      m:'真偽が問われる主張・テーゼ' },
+  { w:'逓減',      m:'徐々に減っていくこと' },
+  { w:'醸成',      m:'雰囲気・状況を時間をかけて作り上げること' },
+];
+
+const NEWS_ITEMS = [
+  {
+    title: 'AIと人間の仕事の未来',
+    text: '近年、AIの急速な発展により多くの職種が自動化される可能性が指摘されています。一方で、新たな職種の創出や人間にしかできない創造的・感情的な仕事の重要性が増すという見方もあります。変化に適応し続ける能力（アダプタビリティ）と、AIと協調して働くスキルを磨くことが重要だと言われています。'
+  },
+  {
+    title: '睡眠と生産性の関係',
+    text: '研究によると、7〜9時間の良質な睡眠は集中力・記憶力・創造性を大幅に向上させます。睡眠不足は判断力の低下を招き、感情のコントロールも難しくなります。「睡眠の質」を高めるためには、就寝前のスマートフォン使用を控え、一定のリズムで眠ることが重要です。'
+  },
+  {
+    title: '読書習慣と認知能力',
+    text: '毎日30分の読書は認知機能の低下を防ぎ、共感力・語彙力・集中力を高める効果があるとされています。特にフィクション（小説）を読むことで他者の視点を体験でき、コミュニケーション能力の向上につながるという研究結果も報告されています。継続的なインプットが思考の幅を広げます。'
+  },
+  {
+    title: '意思決定疲れとは何か',
+    text: '人は一日に使える意思決定のエネルギーに限りがあると言われています。些細な決定を繰り返すほど、重要な判断の質が下がる「決断疲れ」が起きます。スティーブ・ジョブズが毎日同じ服を着たのもこれが理由のひとつです。重要な判断は脳が疲れていない午前中に行うのが効果的です。'
+  },
+];
+
+// ===== STORAGE =====
+const ls = {
+  get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+const getProfile  = () => ls.get('profile', { name:'', job:'', worries:'', style:'gentle' });
+const getVocab    = () => ls.get('vocab', []);
+const getSessions = () => ls.get('sessions', []);
+const getStreak   = () => ls.get('streak', { current:0, lastDate:'' });
+const todayStr    = () => new Date().toISOString().slice(0, 10);
+
+function getDailyData() {
+  const d = ls.get('daily', { date:'', score:0, done:false });
+  return d.date === todayStr() ? d : { date:todayStr(), score:0, done:false };
+}
+
+// ===== MARKDOWN RENDERER =====
+function renderMarkdown(text) {
+  let h = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Headers
+  h = h.replace(/^#### (.+)$/gm, '<div style="font-size:0.82rem;color:var(--muted);margin:10px 0 3px;font-weight:700">$1</div>');
+  h = h.replace(/^### (.+)$/gm, '<div style="font-size:0.95rem;color:var(--gold);margin:16px 0 6px;font-weight:700;border-left:3px solid var(--gold);padding-left:8px">$1</div>');
+  h = h.replace(/^## (.+)$/gm, '<div style="font-size:1rem;color:var(--gold);margin:18px 0 8px;font-weight:700">$1</div>');
+  h = h.replace(/^# (.+)$/gm, '<div style="font-size:1.1rem;color:var(--gold);margin:20px 0 10px;font-weight:700">$1</div>');
+
+  // Bold / italic
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*([^*\n]+?)\*/g, '<em style="color:var(--muted)">$1</em>');
+
+  // Horizontal rule
+  h = h.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:14px 0">');
+
+  // Genre badge  e.g. 🏷️ 安全保障
+  h = h.replace(/🏷️\s*([^\n<]+)/g, '<span style="display:inline-block;background:rgba(212,168,83,0.15);border:1px solid var(--gold);border-radius:20px;padding:2px 10px;font-size:0.75rem;color:var(--gold);margin:4px 0">🏷️ $1</span>');
+
+  // Arrow chains  →
+  h = h.replace(/→/g, '<span style="color:var(--gold);font-weight:700"> → </span>');
+  h = h.replace(/↓/g, '<div style="color:var(--gold);text-align:center;margin:2px 0">↓</div>');
+
+  // Newlines
+  h = h.replace(/\n\n/g, '<div style="margin:6px 0"></div>');
+  h = h.replace(/\n/g, '<br>');
+
+  return h;
+}
+
+// ===== SESSION STATE =====
+let chat = {
+  mode: null,
+  messages: [],
+  exchanges: 0,
+  pts: 0,
+  loading: false,
+  evaluated: false,
+  newsPhase: null,
+  newsContext: '',
+  counterRole: 'defense', // 'defense'=守（AIが反論）| 'attack'=攻（AIが主張）
+  battleScore: { ai: 0, user: 0 }, // 累積議論スコア
+};
+
+// ===== SYSTEM PROMPTS =====
+function buildSystem(mode) {
+  const p = getProfile();
+  const vocab = getVocab();
+  const sessions = getSessions().slice(-5);
+
+  const styleMap = {
+    gentle:   'やさしく温かく寄り添いながらも、相手の思考を促してください。',
+    sharp:    '鋭く容赦なく問い詰めてください。甘やかさないでください。',
+    socratic: '問いかけのみで対話してください。答えを直接教えないでください。',
+    zen:      '短く簡潔に、余白のある言葉で話してください。禅的な間を大切に。',
+  };
+  const styleGuide = styleMap[p.style] || styleMap.gentle;
+
+  const learnedWords = vocab.map(v => v.w).join('、') || 'なし';
+  const unlearnedTop5 = VOCAB_LIST
+    .filter(v => !vocab.find(lv => lv.w === v.w))
+    .slice(0, 5).map(v => v.w).join('、');
+
+  const userCtx = [
+    p.name   ? `ユーザー名: ${p.name}` : '',
+    p.job    ? `職業: ${p.job}` : '',
+    p.worries? `よく悩むテーマ: ${p.worries}` : '',
+  ].filter(Boolean).join('\n');
+
+  const pastTopics = sessions.map(s => s.topic).filter(Boolean).join('、');
+
+  const unlearnedAll = VOCAB_LIST.filter(v => !vocab.find(lv => lv.w === v.w));
+  // シャッフルして横文字・漢字系がランダムに混在するようにする
+  const shuffled = [...unlearnedAll].sort(() => Math.random() - 0.5);
+  const unlearnedSample = shuffled.slice(0, 8).map(v => v.w).join('・');
+  const vocabInstruction = `
+返答の中で、以下の語彙リストにある言葉を自然な形で1つ使ってください。
+使うべき語彙リスト（未習得・優先）: ${unlearnedSample}
+既習得（使わなくてよい）: ${learnedWords}
+語彙を使った後、返答の末尾に必ずこの1行を追加：
+---vocab--- 使った語彙 | その意味
+例: ---vocab--- 齟齬 | 食い違い・ずれ`;
+
+  const modeInstructions = {
+    socratic: `あなたは「思考道場」のAIコーチです。ソクラテス式対話でユーザーの思考を深めます。
+答えを直接教えず、問いを返してください。1回の返答で1〜2問のみ。禅問答のように深く掘り下げてください。
+${styleGuide}
+${vocabInstruction}`,
+
+    counter: chat.counterRole === 'attack'
+      ? `あなたは「思考道場」の【主張者】AIです。あなたが先に提示した主張を論理的に擁護してください。
+
+ルール：
+- ユーザーの反論の鋭い点はまず「確かに〜」「それは鋭い指摘です」と認める
+- ただし主張の核心は簡単には崩さず、論拠を補強して防衛する
+- ユーザーが本当に致命的な欠陥を突いた場合のみ「参りました。その点は認めます」と言ってよい
+- 感情的にならず、あくまで論理で応戦する
+${styleGuide}
+${vocabInstruction}`
+      : `あなたは「思考道場」のAIコーチです。ユーザーの意見に対して建設的に反論します。
+「本当にそう言い切れますか？」「別の視点では〜とも考えられませんか？」「そのエビデンスは？」などで批判的思考を促してください。
+反論しながらも、ユーザーの成長を目的とした建設的な姿勢を保ってください。
+${styleGuide}
+${vocabInstruction}`,
+
+    decision: `あなたは「思考道場」のAIコーチです。ユーザーの意思決定を構造化する手助けをします。
+選択肢・トレードオフ・価値観・優先順位を言語化するよう促してください。
+「なぜその選択をしましたか？」「他の選択肢は？」「何を最も大切にしていますか？」と問いかけてください。
+${styleGuide}
+${vocabInstruction}`,
+
+    news: `あなたは国際情勢ニュースのクイズ採点AIです。
+ユーザーの回答を採点してください（各問20点満点・全5問）。
+
+返答フォーマット（必ず守ること）：
+
+✅ 採点：〇点 / 20点
+
+📖 解説
+（正解・不正解に関わらず、ニュースの正確な事実と背景を2〜3文で補足する）
+
+---
+（次の問題があれば）
+【第N問】（次の事実確認の質問）
+
+（5問終わったら）
+📊 合計：〇点 / 100点
+総評：（1〜2文でコメント）
+
+禁止事項：解答例・模範解答・ヒントを先に出すこと。
+日本語で回答してください。`,
+
+    output: `あなたは「思考道場」のアウトプット採点AIです。
+ユーザーが文章の要約または説明を送ります。それを次の形式で評価してください：
+1. 採点（100点満点）
+2. 良かった点を1つ
+3. 改善点を1つ
+4. 模範要約（2〜3文）
+日本語で返答してください。`,
+  };
+
+  return `${modeInstructions[mode]}
+
+${userCtx ? `【ユーザー情報】\n${userCtx}` : ''}
+${pastTopics ? `過去の対話テーマ: ${pastTopics}` : ''}
+
+必ず日本語で返答してください。返答は簡潔に（200字程度を目安）。`;
+}
+
+// ===== OLLAMA API (STREAMING) =====
+async function callOllama(messages) {
+  const res = await fetch(OLLAMA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: MODEL, messages, stream: true }),
+  });
+  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '', full = '';
+
+  const bubble = appendBubble('ai', '');
+  const contentEl = bubble.querySelector('.bubble-text');
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const d = JSON.parse(line);
+        if (d.message?.content) {
+          full += d.message.content;
+          // Show text without vocab tag
+          contentEl.textContent = full.replace(/\n?---vocab---[\s\S]*$/, '').trim();
+          scrollDown();
+        }
+      } catch {}
+    }
+  }
+
+  // vocab パース（複数対応）
+  const cleanText = full.replace(/\n?---vocab---[\s\S]*$/, '').trim();
+  const detectedWords = new Set();
+
+  // ---vocab--- フォーマット（複数行に対応）
+  const vocabMatches = [...full.matchAll(/---vocab---\s*([^\|｜\n]+?)\s*[|｜]\s*([^\n]+)/g)];
+  for (const vm of vocabMatches) {
+    const word = vm[1].trim(), meaning = vm[2].trim();
+    if (word && meaning && word !== '単語名' && meaning !== '意味' && word.length < 20) {
+      detectedWords.add(word);
+      addVocabHint(bubble, word, meaning);
+      persistVocab(word, meaning);
+    }
+  }
+
+  // テキストスキャン（フォーマット外でも語彙を自動検出・最大5語）
+  const learned = getVocab().map(v => v.w);
+  for (const v of VOCAB_LIST) {
+    if (detectedWords.size >= 5) break;
+    if (!detectedWords.has(v.w) && !learned.includes(v.w) && cleanText.includes(v.w)) {
+      detectedWords.add(v.w);
+      addVocabHint(bubble, v.w, v.m);
+      persistVocab(v.w, v.m);
+    }
+  }
+
+  // マークダウンレンダリング（ストリーム完了後）
+  contentEl.innerHTML = renderMarkdown(cleanText);
+
+  return full;
+}
+
+async function callOllamaJson(messages) {
+  const res = await fetch(OLLAMA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: MODEL, messages, stream: false }),
+  });
+  const data = await res.json();
+  return data.message?.content || '';
+}
+
+// ===== UI HELPERS =====
+function appendBubble(role, text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const span = document.createElement('span');
+  span.className = 'bubble-text';
+  span.textContent = text;
+  div.appendChild(span);
+  msgs.appendChild(div);
+  scrollDown();
+  return div;
+}
+
+function appendNote(text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg system-note';
+  div.textContent = text;
+  msgs.appendChild(div);
+  scrollDown();
+}
+
+function addVocabHint(bubble, word, meaning) {
+  const hint = document.createElement('div');
+  hint.className = 'vocab-hint';
+  hint.innerHTML = `💡 <strong>${word}</strong>＝${meaning}`;
+  bubble.appendChild(hint);
+}
+
+function addTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.id = 'typing';
+  div.className = 'msg ai';
+  div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  scrollDown();
+}
+
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+function scrollDown() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+// ===== SEND MESSAGE =====
+async function sendMessage() {
+  if (chat.loading) return;
+  const el = document.getElementById('chat-input');
+  const text = el.value.trim();
+  if (!text) return;
+
+  el.value = '';
+  el.style.height = 'auto';
+  appendBubble('user', text);
+
+  const sysPrompt = buildSystem(chat.mode);
+  chat.messages.push({ role: 'user', content: text });
+
+  const fullMessages = [
+    { role: 'system', content: sysPrompt },
+    ...chat.messages,
+  ];
+
+  chat.loading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const reply = await callOllama(fullMessages);
+    chat.messages.push({ role: 'assistant', content: reply });
+    chat.exchanges++;
+    document.getElementById('exchange-pill').textContent = `${chat.exchanges}往復`;
+    addPts(PT_PER_EXCHANGE);
+
+    if (chat.exchanges >= 5 && !chat.evaluated) {
+      chat.evaluated = true;
+      await runEval();
+    }
+
+    // 反論モード: 採点（非同期・バー更新、UIをブロックしない）
+    if (chat.mode === 'counter') {
+      evaluateBattle();
+    }
+  } catch (err) {
+    appendNote(`エラー: ${err.message}\nOllamaが起動しているか確認してください。`);
+  }
+
+  chat.loading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ===== EVALUATION =====
+async function runEval() {
+  appendNote('🎯 思考レベルを評価しています...');
+  const convo = chat.messages
+    .map(m => `${m.role === 'user' ? 'あなた' : 'AI'}: ${m.content}`)
+    .join('\n');
+
+  const evalMsgs = [
+    { role:'system', content:`以下の対話を評価してください。JSONのみで返してください。
+形式: {"depth":数字,"vocab":数字,"logic":数字,"feedback":"日本語テキスト"}
+depth: 思考の深さ 0〜10
+vocab: 語彙の豊かさ 0〜10
+logic: 論理構造 0〜10
+feedback: 具体的な改善アドバイス（1〜2文、日本語）` },
+    { role:'user', content:`対話:\n${convo}` },
+  ];
+
+  try {
+    const raw = await callOllamaJson(evalMsgs);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return;
+    const r = JSON.parse(m[0]);
+    const avg = ((r.depth + r.vocab + r.logic) / 3).toFixed(1);
+
+    const msgs = document.getElementById('messages');
+    const card = document.createElement('div');
+    card.className = 'score-card';
+    card.innerHTML = `
+      <div class="score-card-title">🧠 思考レベルスコア（${avg}/10）</div>
+      <div class="score-row"><span>思考の深さ</span><span class="score-val">${r.depth}/10</span></div>
+      <div class="score-row"><span>語彙の豊かさ</span><span class="score-val">${r.vocab}/10</span></div>
+      <div class="score-row"><span>論理構造</span><span class="score-val">${r.logic}/10</span></div>
+      <div class="score-feedback">${r.feedback || ''}</div>
+    `;
+    msgs.appendChild(card);
+    scrollDown();
+    addPts(20);
+    toast('🎯 思考スコアが更新されました！');
+  } catch {}
+}
+
+// ===== POINTS & STREAK =====
+function addPts(n) {
+  const d = getDailyData();
+  const prev = d.done;
+  d.score = Math.min(d.score + n, TARGET_PT);
+  if (d.score >= TARGET_PT && !prev) {
+    d.done = true;
+    updateStreak();
+    toast('🎉 今日のタスク達成！');
+  }
+  ls.set('daily', d);
+  chat.pts += n;
+  document.getElementById('session-pt-label').textContent = `+${Math.round(chat.pts)}pt`;
+  refreshDailyUI();
+}
+
+function updateStreak() {
+  const s = getStreak();
+  const today = todayStr();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (s.lastDate === yesterday) { s.current++; }
+  else if (s.lastDate !== today) { s.current = 1; }
+  s.lastDate = today;
+  ls.set('streak', s);
+}
+
+function refreshDailyUI() {
+  const d = getDailyData();
+  const pct = Math.min((d.score / TARGET_PT) * 100, 100);
+  document.getElementById('daily-progress').style.width = pct + '%';
+  document.getElementById('daily-score-label').textContent = `${Math.round(d.score)} / ${TARGET_PT} pt`;
+  document.getElementById('daily-status-label').textContent = d.done ? '✅ 達成！' : '';
+  const s = getStreak();
+  document.getElementById('streak-display').textContent = `🔥 ${s.current}日`;
+}
+
+// ===== DEBATE TOPICS =====
+const DEBATE_TOPICS = [
+  // テクノロジー・社会
+  'SNSは社会を分断させる',
+  'AIは人間の創造性を奪う',
+  '監視カメラの普及は自由より安全を優先すべきだ',
+  'スマートフォンは人を孤独にしている',
+  'テクノロジーは人間を怠惰にする',
+  'メタバースは現実逃避を加速させるだけだ',
+  'AIによる自動化で仕事を奪われた人への補償は企業が負うべきだ',
+  // 働き方・ライフスタイル
+  '週休3日制は生産性を下げる',
+  'リモートワークはチームの結束を弱める',
+  '副業は本業へのコミットを下げる',
+  '残業を美徳とする文化は日本の競争力を下げている',
+  '給料は成果ではなく努力で決まるべきだ',
+  '起業より大企業に入るほうが合理的な選択だ',
+  // 人間・心理
+  '努力より才能のほうが人生に影響する',
+  '人間は本質的に利己的だ',
+  '感情は意思決定を妨げる',
+  '習慣は意志力より強い',
+  '失敗は成功の母ではなく、単なる損失だ',
+  '人は環境より遺伝によって形作られる',
+  '孤独は創造性を育む',
+  // 政治・社会制度
+  '民主主義は最善の政治体制ではない',
+  '格差は社会の活力に必要だ',
+  '死刑制度は廃止すべきだ',
+  '移民受け入れは経済より文化的摩擦のほうが大きい',
+  '国家よりグローバル機関に権限を移すべきだ',
+  '税金は高いほど社会は良くなる',
+  'ベーシックインカムは労働意欲を失わせる',
+  // 教育・学習
+  '大学教育はAI時代に不要になる',
+  '学校の成績は将来の成功を予測しない',
+  '詰め込み教育は創造性を殺す',
+  '英語教育より母国語教育を優先すべきだ',
+  '読書よりYouTubeのほうが現代人の学習に適している',
+  // 倫理・哲学
+  '嘘は時として正当化される',
+  '目的は手段を正当化しうる',
+  '正義と法律は必ずしも一致しない',
+  '自由意志は幻想だ',
+  '道徳は文化によって異なり普遍的なものは存在しない',
+  // 経済・ビジネス
+  '大企業の独占は消費者にとって有害だ',
+  '株主利益より従業員利益を優先すべきだ',
+  '広告は人の選択を操作している',
+  '貯金より投資のほうがリスクが低い',
+  // 健康・環境
+  '個人の健康管理は社会の責任ではなく自己責任だ',
+  '環境保護より経済発展を優先すべき時期がある',
+  '肉食は倫理的に問題がある',
+  'ジャンクフードへの課税は個人の自由への侵害だ',
+];
+
+function getRandomDebateTopics(n) {
+  const shuffled = [...DEBATE_TOPICS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+// ===== BATTLE SCORE =====
+function updateBattleBar() {
+  const { ai, user } = chat.battleScore;
+  const total = ai + user;
+  if (total === 0) return;
+  const aiPct  = Math.round((ai  / total) * 100);
+  const userPct = 100 - aiPct;
+  document.getElementById('battle-seg-ai').style.flex   = aiPct;
+  document.getElementById('battle-seg-user').style.flex  = userPct;
+  document.getElementById('battle-num-ai').textContent   = aiPct;
+  document.getElementById('battle-num-user').textContent = userPct;
+}
+
+async function evaluateBattle() {
+  if (chat.messages.length < 2) return;
+  const lastAI   = [...chat.messages].reverse().find(m => m.role === 'assistant');
+  const lastUser = [...chat.messages].reverse().find(m => m.role === 'user');
+  if (!lastAI || !lastUser) return;
+
+  const roleNote = chat.counterRole === 'attack'
+    ? 'AIが主張者、ユーザーが攻撃側です。'
+    : 'ユーザーが主張者、AIが反論側です。';
+
+  const evalMsgs = [
+    { role: 'system', content: `議論の採点者です。${roleNote}
+直近の1往復を採点してください。基準：論理の強さ・具体性・反論の鋭さ・説得力。
+合計が10になるよう配点し、JSONのみで返してください: {"ai": 数字, "user": 数字}` },
+    { role: 'user', content: `AIの発言: ${lastAI.content.slice(0, 300)}\nユーザーの発言: ${lastUser.content.slice(0, 300)}` },
+  ];
+
+  try {
+    const raw = await callOllamaJson(evalMsgs);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return;
+    const r = JSON.parse(m[0]);
+    chat.battleScore.ai   += Math.max(0, Math.min(10, Number(r.ai)   || 5));
+    chat.battleScore.user += Math.max(0, Math.min(10, Number(r.user) || 5));
+    updateBattleBar();
+  } catch {}
+}
+
+// ===== COUNTER ROLE SWITCH =====
+function updateCounterToggleUI() {
+  const btn = document.getElementById('role-btn');
+  if (!btn) return;
+  if (chat.counterRole === 'attack') {
+    btn.textContent = '⚔️ 攻';
+    btn.className = 'role-btn attack';
+  } else {
+    btn.textContent = '🛡️ 守';
+    btn.className = 'role-btn defense';
+  }
+}
+
+async function switchCounterRole() {
+  if (chat.loading) return;
+  chat.counterRole = chat.counterRole === 'defense' ? 'attack' : 'defense';
+  updateCounterToggleUI();
+
+  if (chat.counterRole === 'attack') {
+    appendNote('⚔️ 攻守交代！AIが主張を展開します。あなたはその弱点を突いてください。');
+    await triggerAIAttack();
+  } else {
+    appendNote('🛡️ 攻守交代！あなたの主張を入力してください。AIが反論します。');
+    document.getElementById('chat-input').placeholder = '主張を入力してください...';
+    document.getElementById('chat-input').focus();
+  }
+}
+
+async function triggerAIAttack() {
+  if (chat.loading) return;
+  chat.loading = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // これまでの対話から文脈を拾う
+  const recentCtx = chat.messages.slice(-6)
+    .map(m => `${m.role === 'user' ? 'ユーザー' : 'AI'}: ${m.content.slice(0, 80)}`)
+    .join('\n');
+
+  const attackSys = `あなたは議論トレーニングの主張者AIです。
+論争的だが論理的に擁護できる主張を1つ提示してください。
+
+条件：
+- 主張は明確・断定的に述べる（「〜だと思う」ではなく「〜である」）
+- 反論の余地が十分にある程度に尖らせる
+- 主張を述べた後、「さあ、この主張の弱点を突いてみてください。」と促す
+- 長さは3〜5文程度
+
+${recentCtx ? `対話の文脈（関連するテーマがあれば優先）:\n${recentCtx}` : ''}
+以下の候補からランダムに1つ選んで主張を展開せよ（毎回異なるテーマを選ぶこと）：
+${getRandomDebateTopics(5).join('／')}
+
+上記以外のテーマでも、論争的で面白ければ自由に選んでよい。`;
+
+  const messages = [
+    { role: 'system', content: attackSys },
+    { role: 'user', content: '主張を展開してください。' },
+  ];
+
+  try {
+    const reply = await callOllama(messages);
+    chat.messages.push({ role: 'user', content: '（攻守交代：AIが主張を展開）' });
+    chat.messages.push({ role: 'assistant', content: reply });
+    chat.exchanges++;
+    document.getElementById('exchange-pill').textContent = `${chat.exchanges}往復`;
+    addPts(PT_PER_EXCHANGE);
+    document.getElementById('chat-input').placeholder = 'AIの主張の弱点を突いてください...';
+  } catch (err) {
+    appendNote(`エラー: ${err.message}`);
+  }
+
+  chat.loading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+// ===== NEWS MODE =====
+async function fetchNewsRSS() {
+  const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  const sources = [
+    // 国際・政治・経済
+    'https://feeds.reuters.com/reuters/topNews',
+    'https://feeds.reuters.com/reuters/businessNews',
+    'https://feeds.reuters.com/reuters/worldNews',
+    // NHK日本語
+    'https://www3.nhk.or.jp/rss/news/cat0.xml',   // 主要
+    'https://www3.nhk.or.jp/rss/news/cat4.xml',   // 政治
+    'https://www3.nhk.or.jp/rss/news/cat5.xml',   // 経済
+    'https://www3.nhk.or.jp/rss/news/cat6.xml',   // 国際
+    // Google News
+    'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtcGhHZ0pRVFNnQVAB?hl=ja&gl=JP&ceid=JP:ja',
+  ];
+  let items = [];
+  const seen = new Set();
+  for (const src of sources) {
+    try {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 9000);
+      const res = await fetch(R2J + encodeURIComponent(src), { signal: ctrl.signal });
+      clearTimeout(tid);
+      const data = await res.json();
+      if (data.status === 'ok' && data.items?.length) {
+        for (const a of data.items.slice(0, 6)) {
+          if (!seen.has(a.title)) {
+            seen.add(a.title);
+            items.push({
+              title: a.title,
+              desc: (a.description || a.content || '').replace(/<[^>]*>/g, '').slice(0, 400),
+              date: a.pubDate?.slice(0, 10) || '',
+              link: a.link || '',
+            });
+          }
+        }
+      }
+    } catch {}
+  }
+  return items;
+}
+
+async function startNewsMode() {
+  chat.newsPhase = 'fetching';
+  chat.loading = true;
+  document.getElementById('send-btn').disabled = true;
+  appendNote('📡 Reuters・NHK・Google News からニュースを取得中...');
+
+  const items = await fetchNewsRSS();
+
+  // 全システムノートを消す
+  document.querySelectorAll('#messages .system-note').forEach(n => n.remove());
+
+  if (!items.length) {
+    appendNote('⚠️ ニュースの取得に失敗しました。インターネット接続を確認してください。');
+    chat.loading = false;
+    document.getElementById('send-btn').disabled = false;
+    return;
+  }
+
+  appendNote(`📰 ${items.length}件のニュースを取得しました。Ollamaが分析中です...`);
+
+  const articleText = items.slice(0, 20).map((a, i) =>
+    `[${i+1}] ${a.title}${a.date ? ` (${a.date})` : ''}\n${a.desc}`
+  ).join('\n\n');
+
+  chat.newsContext = articleText;
+
+  const sysPrompt = `あなたは国際情勢・政治・経済の専門アナリストです。
+以下のニュース記事を読んで、重要なものを選び、日本語で詳しく解説してください。
+
+【出力フォーマット（必ず守ること）】
+
+## 📌 今日の重要ニュース TOP5
+
+---
+
+### 【1】（タイトルを日本語で簡潔に）
+
+🏷️ ジャンル（安全保障 / 外交 / 経済 / 政治 / エネルギー / 軍事 / 社会 から選ぶ）
+
+**何が起きたか**
+（背景・経緯も含めて4〜5文。知らない人でも分かるよう丁寧に。固有名詞には簡単な説明を添える）
+
+**この先どうなる？**
+〔引き金となった出来事〕 → 〔直接の影響〕 → 〔波及する影響〕 → 〔日本・私たちの生活への影響〕
+
+**知っておくべき背景**
+（なぜ重要か、歴史的経緯・国際的な文脈を2〜3文で補足）
+
+---
+
+【2】〜【5】も同じフォーマットで続けること。
+
+---
+
+✅ 解説完了！
+
+では、今日のニュース理解クイズを1問ずつ出します（全5問・各20点）。
+ニュースの事実についての記述式問題です。
+解答例・ヒントは絶対に出さないこと。ユーザーの回答を待つこと。
+
+【第1問】（「〇〇で何が起きましたか？」「〇〇の原因は何ですか？」などの事実確認の質問）`;
+
+  const messages = [
+    { role: 'system', content: sysPrompt },
+    { role: 'user', content: `今日のニュース記事一覧:\n\n${articleText}` },
+  ];
+
+  document.querySelectorAll('#messages .system-note').forEach(n => n.remove());
+
+  try {
+    const reply = await callOllama(messages);
+    chat.messages.push({ role: 'user', content: `今日のニュース記事一覧:\n\n${articleText}` });
+    chat.messages.push({ role: 'assistant', content: reply });
+    chat.newsPhase = 'quiz';
+    chat.exchanges++;
+    document.getElementById('exchange-pill').textContent = `${chat.exchanges}往復`;
+    addPts(PT_PER_EXCHANGE);
+
+    const qBadge = document.createElement('div');
+    qBadge.className = 'quiz-badge';
+    qBadge.textContent = '💬 上の質問に答えてください';
+    document.getElementById('messages').appendChild(qBadge);
+    scrollDown();
+  } catch (err) {
+    appendNote(`エラー: ${err.message}`);
+  }
+
+  chat.loading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+// ===== VOCAB =====
+function persistVocab(w, m) {
+  const v = getVocab();
+  if (!v.find(x => x.w === w)) {
+    v.push({ w, m, date: todayStr() });
+    ls.set('vocab', v);
+    renderVocabChips();
+  }
+}
+
+function renderVocabChips() {
+  const el = document.getElementById('vocab-chips');
+  if (!el) return;
+  const v = getVocab();
+  if (!v.length) {
+    el.innerHTML = '<span class="vocab-empty">対話を重ねると語彙が蓄積されます</span>';
+    return;
+  }
+  el.innerHTML = v.slice(-12).reverse()
+    .map(x => `<div class="vocab-chip" title="${x.m}">📚 ${x.w}</div>`)
+    .join('');
+}
+
+// ===== CALENDAR =====
+function renderCalendar(id) {
+  const sessions = getSessions();
+  const daily = getDailyData();
+  const doneDates = new Set([
+    ...sessions.filter(s => s.done).map(s => s.date),
+    ...(daily.done ? [daily.date] : []),
+  ]);
+
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayN = now.getDate();
+
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const labelId = id === 'calendar-home' ? 'cal-month-label' : 'stats-cal-label';
+  const labelEl = document.getElementById(labelId);
+  if (labelEl) labelEl.textContent = `${year}年${monthNames[month]}`;
+
+  const grid = document.getElementById(id);
+  grid.innerHTML = '';
+
+  ['日','月','火','水','木','金','土'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-label';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  for (let i = 0; i < firstDow; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day cal-empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    if (doneDates.has(ds)) el.classList.add('done');
+    if (d === todayN) el.classList.add('today');
+    el.textContent = doneDates.has(ds) ? '✓' : d;
+    grid.appendChild(el);
+  }
+}
+
+// ===== MODE START =====
+async function startMode(mode) {
+  chat = { mode, messages: [], exchanges: 0, pts: 0, loading: false, evaluated: false, newsPhase: null, newsContext: '', counterRole: 'defense' };
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('exchange-pill').textContent = '0往復';
+
+  // 攻守スイッチ・バトルバー表示（counterモードのみ）
+  const sw = document.getElementById('counter-switch');
+  if (sw) sw.style.display = mode === 'counter' ? 'flex' : 'none';
+  updateCounterToggleUI();
+  const bb = document.getElementById('battle-bar');
+  if (bb) {
+    bb.style.display = mode === 'counter' ? 'block' : 'none';
+    // スコアリセット
+    chat.battleScore = { ai: 0, user: 0 };
+    document.getElementById('battle-seg-ai').style.flex   = 50;
+    document.getElementById('battle-seg-user').style.flex  = 50;
+    document.getElementById('battle-num-ai').textContent   = 50;
+    document.getElementById('battle-num-user').textContent = 50;
+  }
+  document.getElementById('chat-input').placeholder = '入力してください...';
+  document.getElementById('session-pt-label').textContent = '+0pt';
+  document.getElementById('chat-title').textContent = MODE_META[mode].title;
+  document.getElementById('chat-sub').textContent = MODE_META[mode].sub;
+
+  gotoScreen('chat');
+
+  if (mode === 'news') {
+    startNewsMode();
+    return;
+  }
+
+  if (mode === 'socratic') {
+    const p = getProfile();
+    const name = p.name ? `${p.name}さん、` : '';
+    const koan = KOANS[Math.floor(Math.random() * KOANS.length)];
+    appendNote(`${name}今日はどんなテーマで考えますか？\n悩みがなければ今日の禅問答：「${koan}」`);
+  } else if (mode === 'counter') {
+    appendNote('あなたの考え・意見を入力してください。AIが反論します。');
+  } else if (mode === 'decision') {
+    appendNote('今、悩んでいる意思決定・選択は何ですか？大小問わずOKです。');
+  } else if (mode === 'output') {
+    showOutputIntro();
+  }
+
+  setTimeout(() => document.getElementById('chat-input').focus(), 100);
+}
+
+function showOutputIntro() {
+  const item = NEWS_ITEMS[Math.floor(Math.random() * NEWS_ITEMS.length)];
+  const msgs = document.getElementById('messages');
+  const card = document.createElement('div');
+  card.className = 'news-card msg';
+  card.style.alignSelf = 'stretch';
+  card.style.maxWidth = '100%';
+  card.innerHTML = `<h3>📰 ${item.title}</h3><p>${item.text}</p>`;
+  msgs.appendChild(card);
+  scrollDown();
+  appendNote('上の文章を読んで、あなた自身の言葉で要約・説明してください。AIが採点します。');
+}
+
+function exitChat() {
+  if (chat.exchanges > 0) {
+    endSession();
+  } else {
+    gotoScreen('home');
+  }
+}
+
+function endSession() {
+  if (chat.exchanges > 0) {
+    const sessions = getSessions();
+    const firstUserMsg = chat.messages.find(m => m.role === 'user');
+    const daily = getDailyData();
+    sessions.push({
+      date: todayStr(),
+      mode: chat.mode,
+      exchanges: chat.exchanges,
+      topic: firstUserMsg?.content.slice(0, 30) || '',
+      pts: chat.pts,
+      done: daily.done,
+    });
+    ls.set('sessions', sessions);
+    toast('セッションを保存しました');
+  }
+  gotoScreen('home');
+}
+
+// ===== PROFILE =====
+function loadProfileForm() {
+  const p = getProfile();
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-job').value = p.job || '';
+  document.getElementById('p-worries').value = p.worries || '';
+  document.querySelectorAll('.style-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.style === (p.style || 'gentle'));
+  });
+}
+
+function selectStyle(el) {
+  document.querySelectorAll('.style-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function saveProfile() {
+  const sel = document.querySelector('.style-opt.selected');
+  ls.set('profile', {
+    name: document.getElementById('p-name').value.trim(),
+    job:  document.getElementById('p-job').value.trim(),
+    worries: document.getElementById('p-worries').value.trim(),
+    style: sel?.dataset.style || 'gentle',
+  });
+  toast('プロフィールを保存しました');
+}
+
+// ===== STATS =====
+function renderStats() {
+  const sessions = getSessions();
+  const streak = getStreak();
+  const vocab = getVocab();
+  const daily = getDailyData();
+
+  const doneDays = new Set([
+    ...sessions.filter(s => s.done).map(s => s.date),
+    ...(daily.done ? [daily.date] : []),
+  ]);
+  document.getElementById('stat-days').textContent = doneDays.size;
+  document.getElementById('stat-streak').textContent = streak.current;
+  document.getElementById('stat-vocab').textContent = vocab.length;
+
+  renderCalendar('calendar-stats');
+
+  const modeLabel = { socratic:'🧘', counter:'⚔️', decision:'🧭', output:'📰' };
+  const histEl = document.getElementById('history-list');
+  const recent = [...sessions].reverse().slice(0, 15);
+  histEl.innerHTML = recent.length === 0
+    ? '<p style="color:var(--muted);font-size:0.82rem">まだセッション履歴がありません</p>'
+    : recent.map(s => `
+        <div class="history-item">
+          <h4>${modeLabel[s.mode] || ''} ${MODE_META[s.mode]?.title || s.mode}
+            <span style="color:var(--muted);font-weight:400;font-size:0.78rem;margin-left:6px">${s.date}</span>
+          </h4>
+          <div class="history-meta">${s.exchanges}往復 · ${s.topic ? `「${s.topic}...」` : '—'}</div>
+        </div>`).join('');
+}
+
+// ===== NAVIGATION =====
+function gotoScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+
+  const nav = document.getElementById('bottom-nav');
+  if (name === 'chat') { nav.style.display = 'none'; return; }
+  nav.style.display = 'flex';
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById(`nav-${name}`);
+  if (nb) nb.classList.add('active');
+
+  if (name === 'home') {
+    refreshDailyUI();
+    renderVocabChips();
+    renderCalendar('calendar-home');
+  } else if (name === 'stats') {
+    renderStats();
+  } else if (name === 'profile') {
+    loadProfileForm();
+  }
+}
+
+// ===== TOAST =====
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ===== INIT =====
+refreshDailyUI();
+renderVocabChips();
+renderCalendar('calendar-home');
+</script>
+</body>
+</html>
