@@ -687,7 +687,10 @@ const getProfile  = () => ls.get('profile', { name:'', job:'', worries:'', style
 const getVocab    = () => ls.get('vocab', []);
 const getSessions = () => ls.get('sessions', []);
 const getStreak   = () => ls.get('streak', { current:0, lastDate:'' });
-const todayStr    = () => new Date().toISOString().slice(0, 10);
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
 
 function getDailyData() {
   const d = ls.get('daily', { date:'', score:0, done:false });
@@ -1085,7 +1088,8 @@ function addPts(n) {
 function updateStreak() {
   const s = getStreak();
   const today = todayStr();
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yd = new Date(Date.now() - 86400000);
+  const yesterday = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
   if (s.lastDate === yesterday) { s.current++; }
   else if (s.lastDate !== today) { s.current = 1; }
   s.lastDate = today;
